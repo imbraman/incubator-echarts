@@ -141,9 +141,31 @@ function updateSymbolAndLabelBeforeLineUpdate() {
         var textPosition;
         var textAlign;
         var textVerticalAlign;
-
         var distance = 5 * invScale;
+        var fontSize = Number(label.style.fontSize.toString().split('px')[0]);
+        var textWidth = getTextWidth(label.style.text,fontSize);
         // End
+        if (label.__position === 'insideBottomLeft') {
+            textPosition = [-d[0] * distance + fromPos[0] + textWidth, -d[1] * distance + fromPos[1] + fontSize];
+            textAlign = d[0] > 0.8 ? 'right' : d[0] < -0.8 ? 'left' : 'center';
+            textVerticalAlign = d[1] > 0.8 ? 'bottom' : d[1] < -0.8 ? 'top' : 'middle';
+        } else if (label.__position === 'insideTopLeft') {
+            textPosition = [-d[0] * distance + fromPos[0] + textWidth, -d[1] * distance + fromPos[1] - fontSize];
+            textAlign = d[0] > 0.8 ? 'right' : d[0] < -0.8 ? 'left' : 'center';
+            textVerticalAlign = d[1] > 0.8 ? 'bottom' : d[1] < -0.8 ? 'top' : 'middle';
+        } else if (label.__position === 'insideBottomRight') {
+            textPosition = [d[0] * distance + toPos[0] - textWidth, d[1] * distance + toPos[1] + fontSize];
+            textAlign = d[0] > 0.8 ? 'left' : d[0] < -0.8 ? 'right' : 'center';
+            textVerticalAlign = d[1] > 0.8 ? 'top' : d[1] < -0.8 ? 'bottom' : 'middle';
+        } else if (label.__position === 'insideTopRight') {
+            textPosition = [d[0] * distance + toPos[0] - textWidth, d[1] * distance + toPos[1] - fontSize];
+            textAlign = d[0] > 0.8 ? 'left' : d[0] < -0.8 ? 'right' : 'center';
+            textVerticalAlign = d[1] > 0.8 ? 'top' : d[1] < -0.8 ? 'bottom' : 'middle';
+        } else if (label.__position === 'end') {
+            textPosition = [d[0] * distance + toPos[0], d[1] * distance + toPos[1]];
+            textAlign = d[0] > 0.8 ? 'left' : d[0] < -0.8 ? 'right' : 'center';
+            textVerticalAlign = d[1] > 0.8 ? 'top' : d[1] < -0.8 ? 'bottom' : 'middle';
+        } else
         if (label.__position === 'end') {
             textPosition = [d[0] * distance + toPos[0], d[1] * distance + toPos[1]];
             textAlign = d[0] > 0.8 ? 'left' : (d[0] < -0.8 ? 'right' : 'center');
@@ -174,6 +196,14 @@ function updateSymbolAndLabelBeforeLineUpdate() {
             textAlign = d[0] > 0.8 ? 'right' : (d[0] < -0.8 ? 'left' : 'center');
             textVerticalAlign = d[1] > 0.8 ? 'bottom' : (d[1] < -0.8 ? 'top' : 'middle');
         }
+
+        if (label.__offset) {
+            textPosition = textPosition.map((item, index) => item + label.__offset[index]);
+        }
+        if (label.__color) {
+            label.style.color = label.__color;
+        }
+
         label.attr({
             style: {
                 // Use the user specified text align and baseline first
@@ -184,6 +214,13 @@ function updateSymbolAndLabelBeforeLineUpdate() {
             scale: [invScale, invScale]
         });
     }
+}
+
+function getTextWidth(txt, font) {
+    this.element = document.createElement('canvas');
+    this.context = this.element.getContext('2d');
+    this.context.font = font;
+    return this.context.measureText(txt).width;
 }
 
 /**
@@ -353,6 +390,8 @@ lineProto._updateCommonStl = function (lineData, idx, seriesScope) {
         label.__verticalAlign = labelStyle.textVerticalAlign;
         // 'start', 'middle', 'end'
         label.__position = labelModel.get('position') || 'middle';
+        label.__offset = labelModel.get('offset');
+        label.__color = labelModel.get('color');
     }
 
     if (emphasisText != null) {
