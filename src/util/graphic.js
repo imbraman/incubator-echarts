@@ -41,9 +41,8 @@ import LinearGradient from 'zrender/src/graphic/LinearGradient';
 import RadialGradient from 'zrender/src/graphic/RadialGradient';
 import BoundingRect from 'zrender/src/core/BoundingRect';
 import IncrementalDisplayable from 'zrender/src/graphic/IncrementalDisplayable';
-import * as subPixelOptimizeUtil from 'zrender/src/graphic/helper/subPixelOptimize';
 
-
+var round = Math.round;
 var mathMax = Math.max;
 var mathMin = Math.min;
 
@@ -182,7 +181,15 @@ export function resizePath(path, rect) {
  * @return {Object} Modified param
  */
 export function subPixelOptimizeLine(param) {
-    subPixelOptimizeUtil.subPixelOptimizeLine(param.shape, param.shape, param.style);
+    var shape = param.shape;
+    var lineWidth = param.style.lineWidth;
+
+    if (round(shape.x1 * 2) === round(shape.x2 * 2)) {
+        shape.x1 = shape.x2 = subPixelOptimize(shape.x1, lineWidth, true);
+    }
+    if (round(shape.y1 * 2) === round(shape.y2 * 2)) {
+        shape.y1 = shape.y2 = subPixelOptimize(shape.y1, lineWidth, true);
+    }
     return param;
 }
 
@@ -200,7 +207,22 @@ export function subPixelOptimizeLine(param) {
  * @return {Object} Modified param
  */
 export function subPixelOptimizeRect(param) {
-    subPixelOptimizeUtil.subPixelOptimizeRect(param.shape, param.shape, param.style);
+    var shape = param.shape;
+    var lineWidth = param.style.lineWidth;
+    var originX = shape.x;
+    var originY = shape.y;
+    var originWidth = shape.width;
+    var originHeight = shape.height;
+    shape.x = subPixelOptimize(shape.x, lineWidth, true);
+    shape.y = subPixelOptimize(shape.y, lineWidth, true);
+    shape.width = Math.max(
+        subPixelOptimize(originX + originWidth, lineWidth, false) - shape.x,
+        originWidth === 0 ? 0 : 1
+    );
+    shape.height = Math.max(
+        subPixelOptimize(originY + originHeight, lineWidth, false) - shape.y,
+        originHeight === 0 ? 0 : 1
+    );
     return param;
 }
 
@@ -212,7 +234,14 @@ export function subPixelOptimizeRect(param) {
  * @param {boolean=} positiveOrNegative Default false (negative).
  * @return {number} Optimized position.
  */
-export var subPixelOptimize = subPixelOptimizeUtil.subPixelOptimize;
+export function subPixelOptimize(position, lineWidth, positiveOrNegative) {
+    // Assure that (position + lineWidth / 2) is near integer edge,
+    // otherwise line will be fuzzy in canvas.
+    var doubledPosition = round(position * 2);
+    return (doubledPosition + round(lineWidth)) % 2 === 0
+        ? doubledPosition / 2
+        : (doubledPosition + (positiveOrNegative ? 1 : -1)) / 2;
+}
 
 
 function hasFillOrStroke(fillOrStroke) {
