@@ -119,11 +119,18 @@ var pointerShapeBuilder = {
 
     shadow: function (axis, pixelValue, otherExtent) {
         var bandWidth = Math.max(1, axis.getBandWidth());
+        var x = pixelValue - bandWidth / 2;
+        if(axis.grid._rect.x === pixelValue) {
+            x = pixelValue
+            bandWidth = bandWidth/2;
+        } else if (axis.grid._rect.x + axis.grid._rect.width  === pixelValue) {
+            bandWidth = bandWidth/2;
+        }
         var span = otherExtent[1] - otherExtent[0];
         return {
             type: 'Rect',
             shape: viewHelper.makeRectShape(
-                [pixelValue - bandWidth / 2, otherExtent[0]],
+                [x, otherExtent[0]],
                 [bandWidth, span],
                 getAxisDimIndex(axis)
             )
